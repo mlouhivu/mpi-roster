@@ -56,6 +56,8 @@ int main(int argc, char *argv[]) {
     int rank, size;
     char node[256];
     char core[8 * CPU_SETSIZE];
+    int up, down;
+    MPI_Status status;
 
     memset(node, 0, sizeof(node));
     memset(core, 0, sizeof(core));
@@ -67,9 +69,22 @@ int main(int argc, char *argv[]) {
     gethostname(node, sizeof(node));
     get_corelist(core, sizeof(core));
 
+    up = rank - 1;
+    down = rank + 1;
+    if (up < 0)
+        up = MPI_PROC_NULL;
+    if (down >= size)
+        down = MPI_PROC_NULL;
+
+    int dummy=8;
+    MPI_Recv(&dummy, 1, MPI_INT, up, 0, MPI_COMM_WORLD, &status);
+
     int pad = 1 + (int) (log(size) / log(10));
     printf("Rank %*d @ node %s, core: %s\n", pad, rank, node, core);
 
+    MPI_Send(&dummy, 1, MPI_INT, down, 0, MPI_COMM_WORLD);
+
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return(0);
 }
